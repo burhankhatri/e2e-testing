@@ -16,6 +16,7 @@ mkdir -p "$SKILLS_DIR"
 
 # List of skills to install
 SKILLS=(
+  "start"
   "tdd"
   "systematic-debugging"
   "verification"
@@ -59,9 +60,10 @@ fi
 echo ""
 echo "=== Done! ==="
 echo ""
-echo "Installed 7 global skills to $SKILLS_DIR/"
+echo "Installed 8 global skills to $SKILLS_DIR/"
 echo ""
 echo "Skills available:"
+echo "  /start                  — master orchestrator: routes tasks through the full pipeline"
 echo "  /tdd                    — strict red-green-refactor TDD"
 echo "  /debug                  — 4-phase root cause debugging"
 echo "  /verify-done            — evidence before completion claims"

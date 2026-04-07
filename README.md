@@ -1,11 +1,12 @@
 # Claude Code Agentic Development Skills
 
-A set of 7 global skills for [Claude Code](https://claude.ai/claude-code) that enforce disciplined, test-driven agentic development. Install once, use in any project.
+A set of 8 global skills for [Claude Code](https://claude.ai/claude-code) that enforce disciplined, test-driven agentic development. Install once, use in any project.
 
 ## Skills
 
 | Skill | Command | What it does |
 |-------|---------|--------------|
+| **Start** | `/start` | Master orchestrator — routes tasks through the full pipeline with guaranteed test infrastructure and E2E coverage. |
 | **TDD** | `/tdd` | Enforces strict red-green-refactor. No production code without a failing test first. |
 | **Systematic Debugging** | `/debug` | 4-phase root cause investigation before any fix attempt. |
 | **Verification** | `/verify-done` | Requires fresh evidence before any completion claim. |
@@ -30,6 +31,24 @@ This installs all skills globally to `~/.claude/skills/` and sets up the orchest
 
 Once installed, skills are available in any project:
 
+```
+/start <task description>
+```
+
+That's it. `/start` handles everything — it routes your task through the correct skill chain, creates `testing.md` if it doesn't exist, guarantees Playwright E2E tests, and won't claim done without verification.
+
+### What `/start` does
+
+1. **Creates `testing.md`** — auto-detects your project's test setup and writes a testing guide (if one doesn't exist)
+2. **Routes the task** — feature, bugfix, refactor, or e2e-only each get the right skill chain
+3. **Runs TDD** — every implementation step follows red-green-refactor
+4. **Writes E2E tests** — Playwright tests for every user-facing flow (mandatory, not optional)
+5. **Verifies** — runs the full test suite and shows evidence before claiming done
+
+### Individual skills
+
+You can also invoke skills directly:
+
 - **New feature** — `/brainstorm-and-plan` then `/tdd`
 - **Bug fix** — `/debug` then `/tdd`
 - **Refactor** — `/tdd` (tests for existing behavior first, then refactor)
@@ -38,23 +57,19 @@ Once installed, skills are available in any project:
 - **Review** — `/code-review`
 - **Before claiming done** — `/verify-done`
 
-### Project Setup
-
-For best results with `/test-loop`, create a `testing.md` in your project root describing how to run your test suites, required env vars, and setup steps. See the [test-loop skill](skills/test-automation-loop/SKILL.md) for a template.
-
 ## How It Works
 
-The orchestrator `CLAUDE.md` routes tasks to the right skill chain automatically:
+The `/start` skill orchestrates the full pipeline:
 
 ```
-User request → CLAUDE.md routing → Skill chain → Verified output
+/start <task> → testing.md → Route → TDD → E2E → Verify
 ```
 
-**Decision tree:**
-- "Build X" → `/brainstorm-and-plan` → `/tdd` → `/verify-done`
-- "Fix this" → `/debug` → `/tdd` → `/verify-done`
-- "Make it work" → `/test-loop`
-- "Review this" → `/code-review`
+**Routing examples:**
+- `/start add user auth` → brainstorm → tdd → e2e → verify
+- `/start fix login loop` → debug → tdd → e2e → verify
+- `/start extract auth middleware` → tdd (existing behavior) → refactor → e2e → verify
+- `/start add checkout e2e tests` → e2e → verify
 
 ## Philosophy
 
