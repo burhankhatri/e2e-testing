@@ -39,6 +39,17 @@ Skip any step = lying, not verifying
 | "Bug fixed" | Test original symptom: passes | Code changed, assumed fixed |
 | "Regression test works" | Red-green cycle verified | Test passes once |
 | "Requirements met" | Line-by-line checklist | Tests passing |
+| "E2E coverage" | `npx playwright test` output: 0 failures | "Playwright not installed", unit tests only |
+
+## E2E Gate (when invoked from /start)
+
+If this verification was triggered by the `/start` pipeline, you MUST verify that Playwright E2E tests exist and pass:
+
+```bash
+npx playwright test
+```
+
+If this command fails because Playwright is not installed or no E2E tests exist, **verification FAILS**. Go back to Step 5 of `/start` and do the work. Do not rationalize skipping E2E.
 
 ## Patterns
 

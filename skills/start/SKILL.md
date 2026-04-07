@@ -21,7 +21,7 @@ You MUST follow this sequence exactly. No shortcuts. No skipping steps.
 
 ### Step 0: Test Infrastructure
 
-**This step runs EVERY time, before anything else.**
+**This step runs EVERY time, before anything else. Do NOT skip any sub-step.**
 
 Check if `testing.md` exists at the project root.
 
@@ -67,10 +67,15 @@ Location: `tests/e2e/`
 - Traces: `npx playwright show-trace test-results/*/trace.zip`
 ```
 
-3. If Playwright is not installed, add it to the plan as a Phase 0 task.
-4. Commit: `git commit -m "docs: add testing.md"`
+3. **Install Playwright if not already installed.** This is NOT optional. Run:
+   ```bash
+   npm install -D @playwright/test && npx playwright install chromium
+   ```
+4. **Create `playwright.config.ts` if it doesn't exist.** Use the config template from `/e2e-playwright`.
+5. **Create `tests/e2e/` directory** if it doesn't exist.
+6. Commit: `git commit -m "chore: add test infrastructure (testing.md, playwright)"`
 
-**If it exists:** Read it before proceeding.
+**If it exists:** Read it. Then verify Playwright is installed (`npx playwright --version`). If not, install it now before proceeding.
 
 ---
 
@@ -125,25 +130,52 @@ For each piece of work:
 
 ---
 
-### Step 5: E2E Coverage (MANDATORY)
+### Step 5: E2E Coverage
 
-This step is **NOT optional**. Every task that goes through `/start` gets Playwright E2E tests.
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  THIS STEP IS MANDATORY. YOU MUST NOT SKIP IT.                  ║
+║                                                                  ║
+║  "Playwright is not installed" → INSTALL IT (Step 0 should      ║
+║  have done this — if it didn't, install it now).                 ║
+║                                                                  ║
+║  "It would require significant setup" → THAT IS THE WORK.       ║
+║  Do the setup. That's what this step is for.                     ║
+║                                                                  ║
+║  "The user already approved without E2E" → The user approved     ║
+║  the PLAN. This pipeline requires E2E. Write them.               ║
+║                                                                  ║
+║  "Unit tests already cover this" → Unit tests are not E2E.       ║
+║  E2E tests run a real browser. Write them.                       ║
+║                                                                  ║
+║  There is NO valid reason to skip this step.                     ║
+╚══════════════════════════════════════════════════════════════════╝
+```
 
-Run `/e2e-playwright` to write E2E tests covering:
+**Before writing tests, verify Playwright works:**
+
+```bash
+npx playwright --version  # Must output a version number
+```
+
+If this fails, run: `npm install -D @playwright/test && npx playwright install chromium`
+
+**Then run `/e2e-playwright`** to write E2E tests covering:
 
 - **Features**: Every user-facing flow introduced or changed
 - **Bugfixes**: A test that reproduces the original bug and confirms the fix
 - **Refactors**: Tests proving existing behavior is preserved
 - **API routes**: Request/response tests via Playwright's `request` fixture
 
-After writing E2E tests:
+**After writing E2E tests, confirm they pass:**
 
 ```bash
-# Run tests multiple times to confirm stability
 npx playwright test --repeat-each=3
 ```
 
 If any test is flaky, diagnose and fix before proceeding. Do NOT move on with flaky tests.
+
+**If E2E tests are not written and passing, Step 6 (verify) MUST fail.**
 
 ---
 
