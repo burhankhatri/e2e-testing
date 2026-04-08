@@ -92,8 +92,30 @@ test('profile page layout', async ({ page }) => {
 
 Masks render as solid-color boxes in the screenshot. The masked region is excluded from comparison entirely.
 
-**When to mask vs when NOT to screenshot:**
-- Mask 1-3 small regions — masking works fine
+**Alternative: freeze dynamic content with JavaScript**
+
+When masking isn't sufficient (e.g., content affects layout), inject JS to freeze it:
+
+```typescript
+test('freeze clock before screenshot', async ({ page }) => {
+  await page.goto('/dashboard');
+
+  // Replace all dynamic timestamps with a fixed value
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-testid="timestamp"]').forEach((el) => {
+      el.textContent = 'Jan 1, 2025 12:00 PM';
+    });
+  });
+
+  await expect(page).toHaveScreenshot('dashboard-frozen.png');
+});
+```
+
+Use freezing over masking when dynamic content affects layout (e.g., long vs short timestamps shift adjacent elements).
+
+**When to mask vs freeze vs skip:**
+- Mask 1-3 small regions that don't affect layout — masking works fine
+- Content affects layout (variable-length text, dynamic heights) — freeze via `page.evaluate()`
 - More than half the page is dynamic — visual regression is the wrong tool, use functional assertions
 
 ## Baseline Management
@@ -231,6 +253,49 @@ export default defineConfig({
   ],
 });
 ```
+
+## Tagging for Selective Updates
+
+Tag visual tests with `@visual` so you can update baselines selectively:
+
+```typescript
+test('homepage layout @visual', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveScreenshot('homepage.png', {
+    animations: 'disabled',
+  });
+});
+
+test('pricing layout @visual', async ({ page }) => {
+  await page.goto('/pricing');
+  await expect(page).toHaveScreenshot('pricing.png', {
+    animations: 'disabled',
+  });
+});
+```
+
+```bash
+# Update only visual test baselines
+npx playwright test --grep @visual --update-snapshots
+
+# Run only visual tests
+npx playwright test --grep @visual
+```
+
+## Platform-Agnostic Snapshots with `snapshotPathTemplate`
+
+Strip the platform suffix so baselines work cross-platform (requires Docker for generation):
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+  snapshotPathTemplate: '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{-projectName}{ext}',
+  // Omits {-snapshotSuffix} which includes the platform name (linux, darwin, win32).
+  // This means snapshots are platform-agnostic — you MUST generate them in Docker.
+});
+```
+
+This is cleaner than maintaining per-platform baselines, but requires that ALL baseline generation happens in Docker.
 
 ## Anti-Patterns
 

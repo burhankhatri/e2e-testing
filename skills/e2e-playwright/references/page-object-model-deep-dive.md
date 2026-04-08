@@ -165,6 +165,115 @@ test('search from dashboard', async ({ dashboardPage }) => {
 });
 ```
 
+## Factory Functions (Lightweight Alternative)
+
+For simple pages with few actions, a factory function avoids class ceremony:
+
+```typescript
+// pages/error.page.ts
+import { type Page } from '@playwright/test';
+
+export function createErrorPage(page: Page) {
+  return {
+    errorHeading: page.getByRole('heading', { name: 'Something went wrong' }),
+    retryButton: page.getByRole('button', { name: 'Retry' }),
+
+    async goto() {
+      await page.goto('/error');
+    },
+
+    async retry() {
+      await page.getByRole('button', { name: 'Retry' }).click();
+    },
+  };
+}
+```
+
+```typescript
+// Usage in test:
+import { createErrorPage } from './pages/error.page';
+
+test('retry button reloads the page', async ({ page }) => {
+  const errorPage = createErrorPage(page);
+  await errorPage.goto();
+  await errorPage.retry();
+  await expect(page).not.toHaveURL('/error');
+});
+```
+
+**Use when:** 3-5 interactions, no composition needed, 1-2 test files.
+**Avoid when:** 5+ methods, needs component composition, or used across 3+ files.
+
+## Async Initialization Pattern
+
+Never put `await` in a constructor. For pages requiring async setup (API data loading, animations settling), use a static factory method:
+
+```typescript
+// pages/AnalyticsPage.ts
+import { type Page, type Locator } from '@playwright/test';
+
+export class AnalyticsPage {
+  readonly chart: Locator;
+  readonly dateRange: Locator;
+
+  private constructor(private readonly page: Page) {
+    this.chart = page.getByTestId('analytics-chart');
+    this.dateRange = page.getByLabel('Date range');
+  }
+
+  /** Use this instead of `new AnalyticsPage()`. Waits for chart data to load. */
+  static async create(page: Page): Promise<AnalyticsPage> {
+    const analyticsPage = new AnalyticsPage(page);
+    await page.goto('/analytics');
+    await analyticsPage.chart.waitFor({ state: 'visible' });
+    return analyticsPage;
+  }
+
+  async selectDateRange(range: string) {
+    await this.dateRange.click();
+    await this.page.getByRole('option', { name: range }).click();
+  }
+}
+```
+
+```typescript
+// Wire into fixture:
+export const test = base.extend<{ analyticsPage: AnalyticsPage }>({
+  analyticsPage: async ({ page }, use) => {
+    const analyticsPage = await AnalyticsPage.create(page);
+    await use(analyticsPage);
+  },
+});
+```
+
+## Decision Flowchart
+
+```
+How complex is the page?
+│
+├── 1-2 interactions, single test file
+│   └── No POM. Inline locators in the test.
+│
+├── 3-5 interactions OR 2+ test files use it
+│   ├── Few methods, no composition needed
+│   │   └── Factory function
+│   └── Multiple methods, needs component composition
+│       └── Full POM class
+│
+├── Used across 3+ test files
+│   └── POM class + fixture injection
+│
+└── Page requires async setup before usable
+    └── Static factory method + fixture
+```
+
+| Factor | Inline | Factory function | POM class | POM + fixture |
+|---|---|---|---|---|
+| Page complexity | 1-2 actions | 3-5 actions | 5+ actions | 5+ actions |
+| Reuse across files | 1 file | 1-2 files | 2+ files | 3+ files |
+| Component composition | No | No | Yes | Yes |
+| Setup ceremony | None | Low | Medium | Medium (once) |
+
 ## Anti-Patterns
 
 | Anti-pattern | Problem | Fix |

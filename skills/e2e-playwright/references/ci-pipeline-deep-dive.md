@@ -337,6 +337,125 @@ docker run --rm \
   npx playwright test --update-snapshots
 ```
 
+## Test Coverage
+
+### V8 coverage with Playwright:
+
+```typescript
+// playwright.config.ts — enable V8 coverage collection
+export default defineConfig({
+  use: {
+    // V8 coverage is collected via Chrome DevTools Protocol
+    contextOptions: {
+      // No special config needed — coverage is collected via test code
+    },
+  },
+});
+```
+
+### Coverage fixture:
+
+```typescript
+// fixtures.ts — collect coverage per test
+import { test as base } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+
+export const test = base.extend({
+  page: async ({ page }, use) => {
+    await page.coverage.startJSCoverage();
+    await use(page);
+    const coverage = await page.coverage.stopJSCoverage();
+
+    // Write coverage data for merging
+    const coverageDir = path.join('coverage', 'tmp');
+    fs.mkdirSync(coverageDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(coverageDir, `coverage-${Date.now()}.json`),
+      JSON.stringify(coverage),
+    );
+  },
+});
+```
+
+### Merging coverage from sharded runs:
+
+```yaml
+# In GitHub Actions merge-reports job:
+- name: Download coverage data
+  uses: actions/download-artifact@v4
+  with:
+    path: all-coverage
+    pattern: coverage-*
+    merge-multiple: true
+
+- name: Merge and report coverage
+  run: npx nyc report --reporter=text --reporter=lcov --temp-dir=all-coverage
+```
+
+### Coverage thresholds in CI:
+
+```json
+// .nycrc or package.json
+{
+  "check-coverage": true,
+  "lines": 80,
+  "branches": 70,
+  "functions": 75,
+  "statements": 80
+}
+```
+
+## Docker Compose for Full-Stack Testing
+
+When your app needs a database and services, use Docker Compose to run the full stack:
+
+```yaml
+# docker-compose.test.yml
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=postgresql://test:test@db:5432/testdb
+      - NODE_ENV=test
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: testdb
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.50.0-noble
+    depends_on:
+      - app
+    working_dir: /work
+    volumes:
+      - .:/work
+    command: npx playwright test
+    environment:
+      - BASE_URL=http://app:3000
+```
+
+```bash
+# Run full stack + tests
+docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from e2e
+
+# Extract reports after run
+docker compose -f docker-compose.test.yml cp e2e:/work/playwright-report ./playwright-report
+```
+
 ## Reporter Configuration
 
 ### CI reporters:
