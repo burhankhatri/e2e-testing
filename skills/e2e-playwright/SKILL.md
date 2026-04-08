@@ -597,15 +597,20 @@ For deep dives, read the relevant file in `references/`:
 
 | File | When to read |
 |---|---|
-| `locators-deep-dive.md` | Chaining, filtering, nth, scoping within components |
-| `authentication-deep-dive.md` | Multi-role, API login, NextAuth, token refresh |
-| `fixtures-deep-dive.md` | Worker-scoped, auto fixtures, composing, parameterized |
-| `mocking-deep-dive.md` | HAR recording, conditional mocking, request modification |
-| `common-pitfalls.md` | All 20 pitfalls with full code examples |
-| `nextjs-deep-dive.md` | Middleware, ISR, route handlers, parallel routes |
-| `flaky-tests-deep-dive.md` | Isolation strategies, test ordering, CI diagnosis |
-| `debugging-deep-dive.md` | Trace viewer, inspector, verbose logging, VS Code |
-| `visual-regression-deep-dive.md` | `toHaveScreenshot()`, baselines, thresholds, masking, CI font rendering |
-| `screenshots-and-media-deep-dive.md` | Proactive capture, video, traces, per-iteration loop debugging |
-| `ci-pipeline-deep-dive.md` | GitHub Actions, GitLab CI, artifacts, sharding, visual regression in CI |
-| `page-object-model-deep-dive.md` | POM vs fixtures vs helpers, composition, anti-patterns |
+| `locators-deep-dive.md` | Decision flowchart, 12+ element types, frame locators, shadow DOM, regex |
+| `authentication-deep-dive.md` | Multi-role, API login, OAuth mocking, session timeout, NextAuth, MFA |
+| `fixtures-deep-dive.md` | Worker-scoped, auto, option, typed fixtures, mergeTests, anti-patterns |
+| `mocking-deep-dive.md` | Decision flowchart, HAR recording, conditional mocking, contract validation |
+| `common-pitfalls.md` | 20+ pitfalls organized by category with BAD/GOOD code examples |
+| `nextjs-deep-dive.md` | App Router, middleware, server actions, API CRUD, ISR, NextAuth |
+| `flaky-tests-deep-dive.md` | 4-category taxonomy, fix patterns, quarantine, prevention checklist |
+| `debugging-deep-dive.md` | Systematic workflow, failure-type decision guide, VS Code, anti-patterns |
+| `visual-regression-deep-dive.md` | `toHaveScreenshot()`, baselines, thresholds, masking, `@visual` tagging |
+| `screenshots-and-media-deep-dive.md` | Capture profiles, video, traces, per-iteration loop debugging |
+| `ci-pipeline-deep-dive.md` | GitHub Actions, GitLab CI, sharding, artifacts, coverage, Docker Compose |
+| `page-object-model-deep-dive.md` | POM vs fixtures vs factory functions, async init, decision flowchart |
+| `test-data-management-deep-dive.md` | Factory patterns, faker, unique IDs for parallel, DB seeding, cleanup |
+| `clock-and-time-mocking-deep-dive.md` | `page.clock`, countdowns, session timeouts, timezone handling |
+| `iframes-and-shadow-dom-deep-dive.md` | `frameLocator()`, cross-origin, shadow DOM piercing, payment widgets |
+| `api-testing-deep-dive.md` | `request` fixture, CRUD patterns, auth headers, GraphQL, API seeding |
+| `test-organization-deep-dive.md` | Feature-based structure, tagging, filtering, smoke subsets for loops |
