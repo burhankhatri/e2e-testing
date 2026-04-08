@@ -102,7 +102,15 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
+    video: 'retain-on-failure',
+  },
+
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.01,
+      animations: 'disabled',
+    },
   },
 
   projects: [
@@ -132,6 +140,8 @@ export default defineConfig({
 playwright-report/
 playwright/.auth/
 test-results/
+blob-report/
+screenshots/
 ```
 
 ---
@@ -228,6 +238,49 @@ await expect(async () => {
 ```
 
 **Critical mistake:** `expect(await locator.textContent()).toBe('x')` — this resolves ONCE with no retry. Use `await expect(locator).toHaveText('x')` instead.
+
+---
+
+## Visual Regression
+
+### When to use:
+
+| Scenario | Visual regression? |
+|----------|-------------------|
+| Component library / design system | **Yes** — catch unintended style side effects |
+| Layout after CSS refactor | **Yes** — verify no regressions |
+| Pages with live API data | **No** — content changes break screenshots |
+| Real-time dashboards | **No** — dynamic content always diffs |
+
+### Quick reference:
+
+```typescript
+// Full page baseline
+await expect(page).toHaveScreenshot('homepage.png');
+
+// Element-level (smaller, more stable)
+await expect(page.getByTestId('nav')).toHaveScreenshot('nav.png');
+
+// Full scrollable page
+await expect(page).toHaveScreenshot('pricing.png', { fullPage: true });
+
+// With masking for dynamic content
+await expect(page).toHaveScreenshot('profile.png', {
+  mask: [page.getByTestId('timestamp'), page.getByTestId('avatar')],
+});
+```
+
+### Baseline workflow:
+
+```bash
+# Generate baselines (first run or after intentional UI change)
+npx playwright test --update-snapshots
+
+# Commit baselines — they are the source of truth
+git add tests/e2e/*.spec.ts-snapshots/
+```
+
+**For thresholds, CI consistency, masking strategies, and anti-patterns, read `references/visual-regression-deep-dive.md`**
 
 ---
 
@@ -552,3 +605,7 @@ For deep dives, read the relevant file in `references/`:
 | `nextjs-deep-dive.md` | Middleware, ISR, route handlers, parallel routes |
 | `flaky-tests-deep-dive.md` | Isolation strategies, test ordering, CI diagnosis |
 | `debugging-deep-dive.md` | Trace viewer, inspector, verbose logging, VS Code |
+| `visual-regression-deep-dive.md` | `toHaveScreenshot()`, baselines, thresholds, masking, CI font rendering |
+| `screenshots-and-media-deep-dive.md` | Proactive capture, video, traces, per-iteration loop debugging |
+| `ci-pipeline-deep-dive.md` | GitHub Actions, GitLab CI, artifacts, sharding, visual regression in CI |
+| `page-object-model-deep-dive.md` | POM vs fixtures vs helpers, composition, anti-patterns |
