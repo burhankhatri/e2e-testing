@@ -141,8 +141,9 @@ playwright-report/
 playwright/.auth/
 test-results/
 blob-report/
-screenshots/
 ```
+
+**Do NOT gitignore screenshot baselines.** The `*.spec.ts-snapshots/` directories created by `toHaveScreenshot()` MUST be committed — they are the source of truth for visual regression tests. Only ephemeral artifacts (`test-results/`, `playwright-report/`) should be ignored.
 
 ---
 
@@ -277,8 +278,11 @@ await expect(page).toHaveScreenshot('profile.png', {
 npx playwright test --update-snapshots
 
 # Commit baselines — they are the source of truth
-git add tests/e2e/*.spec.ts-snapshots/
+git add tests/e2e/**/*.spec.ts-snapshots/
+git commit -m "test: add/update Playwright screenshot baselines"
 ```
+
+**CRITICAL:** Screenshot baselines MUST be committed. Without them, `toHaveScreenshot()` fails on the next run because there's nothing to compare against. Never gitignore `*.spec.ts-snapshots/` directories.
 
 **For thresholds, CI consistency, masking strategies, and anti-patterns, read `references/visual-regression-deep-dive.md`**
 

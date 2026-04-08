@@ -187,6 +187,21 @@ npx playwright test --repeat-each=3
 
 If any test is flaky, diagnose and fix before proceeding. Do NOT move on with flaky tests.
 
+**Commit screenshot baselines:**
+
+If any tests use `toHaveScreenshot()`, Playwright generates baseline images in `*.spec.ts-snapshots/` directories. These MUST be committed — they are the source of truth for visual regression.
+
+```bash
+# Check for generated screenshot baselines
+find tests/e2e -name "*.spec.ts-snapshots" -type d
+
+# If any exist, stage and commit them
+git add tests/e2e/**/*.spec.ts-snapshots/
+git commit -m "test: add Playwright screenshot baselines"
+```
+
+Do NOT skip this. Without committed baselines, `toHaveScreenshot()` will fail on subsequent runs.
+
 **E2E Quality Gate — answer ALL before proceeding to Step 6:**
 
 ```
