@@ -155,16 +155,33 @@ If you extract `validateRuleBody()` and write 5 tests for it, the API route that
 - Error responses from the handler
 - The full request→response contract
 
-**Behavior Coverage Checklist — for each type of code you wrote, verify:**
+**Behavior Coverage Checklist — two levels, both required:**
 
-| Code you wrote | What test do you owe? |
+**Write NOW (unit/integration — during TDD in `/start` Step 4):**
+
+| Code you wrote | Test to write now |
 |---|---|
-| API route handler | Test that calls the route and checks request→response (integration or E2E) |
-| UI component with interactions | E2E test that clicks/types/drags and verifies outcomes |
+| API route handler | Integration test that calls the handler, checks status + response body |
 | Bug fix | Regression test that reproduces the original symptom |
-| Navigation change | E2E test that clicks nav and verifies destination renders |
-| State management logic | Test through the UI or API that triggers it, not the store directly |
-| Extracted helper/utility | Unit test — but this DOES NOT replace the above. Both are required. |
+| State management logic | Test through the API or function that triggers the flow |
+| Extracted helper/utility | Unit test — but this DOES NOT replace tests for the code that calls it |
+
+**Owe for E2E (browser tests — written in `/start` Step 5):**
+
+| Code you wrote | E2E test owed |
+|---|---|
+| UI component with interactions | E2E that clicks/types/drags and verifies outcomes |
+| Navigation change | E2E that clicks nav item, verifies URL + destination content |
+| Bug fix with UI symptoms | E2E that reproduces the original user-visible bug |
+| New page or route | E2E that navigates to it and tests the primary workflow |
+
+**Before leaving TDD, list your E2E debts.** Write them down — they carry forward to Step 5. Example:
+```
+E2E debts from Step 4:
+- Canvas page: drag entry→project creates rule, future entries auto-link
+- Navigation: sidebar + mobile nav show Canvas, clicking navigates correctly
+- Bug fix: calendar cells are ≥32px on mobile viewport
+```
 
 **The rule:** A helper test is a bonus. The behavior test is the requirement.
 

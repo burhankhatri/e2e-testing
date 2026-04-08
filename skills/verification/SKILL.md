@@ -74,7 +74,17 @@ Before claiming completion, assess whether tests are proportional to the code yo
 - Navigation added/changed without an E2E test clicking the nav and verifying the destination
 - "All N tests pass" where N hasn't increased despite new production code
 
-**The check:** Look at `git diff --stat` for the work being verified. For every production file changed, point to the test that covers it. If you can't point to one, go back and write it.
+**The check:** Look at `git diff --stat` for the work being verified. For every production file changed, point to the test that covers it. If you can't → verification FAILS.
+
+**When proportionality fails, route back explicitly:**
+
+| What's missing | Go to | Then |
+|---|---|---|
+| Integration test for API route | `/start` Step 4 — write it with `/tdd` (red→green) | Re-run `/verification` from the top |
+| E2E test for UI/nav/workflow | `/start` Step 5 — write it with `/e2e-playwright` | Re-run `/verification` from the top |
+| Regression test for bug fix | `/start` Step 4 — write it with `/tdd` (red→green) | Re-run `/verification` from the top |
+
+**After ANY loop-back:** Re-run the FULL gate function (identify → run → read → verify). Do not skip re-verification. Do not assume the new test fixed everything — run ALL tests and re-check ALL proportionality. Partial re-checks prove nothing.
 
 ## Patterns
 

@@ -128,6 +128,18 @@ For each piece of work:
 
 **Commit after every green cycle**, not at the end.
 
+**Test Debt Handoff — before moving to Step 5:**
+
+Review the `/tdd` Behavior Coverage Checklist. List every E2E test owed:
+```
+E2E debts from Step 4:
+- [ ] [describe the user workflow that needs an E2E test]
+- [ ] [describe the nav change that needs a navigation test]
+- [ ] [describe the bug fix that needs a browser-level regression test]
+```
+
+Carry this list into Step 5. Every item MUST be covered before Step 6.
+
 ---
 
 ### Step 5: E2E Coverage
@@ -195,10 +207,15 @@ If any test is flaky, diagnose and fix before proceeding. Do NOT move on with fl
 ║  □ Would these tests catch a regression if someone broke         ║
 ║    this feature tomorrow?                                        ║
 ║                                                                  ║
-║  If ANY answer is NO → go back and write real feature tests.     ║
+║  If ANY answer is NO → stay in Step 5 and write the missing      ║
+║  feature tests. Then re-run --repeat-each=3 and re-answer        ║
+║  this gate. Do NOT proceed until all boxes are checked.           ║
+║                                                                  ║
 ║  "Page loads without 404" is baseline, not coverage.             ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
+
+**Check every item from the Test Debt Handoff list (Step 4).** Each debt must map to a passing E2E test. Uncovered debts = stay in Step 5.
 
 **If E2E tests are not written and passing, Step 6 (verify) MUST fail.**
 
