@@ -16,32 +16,23 @@ setup('authenticate', async ({ page }) => {
   await page.waitForURL('/dashboard');
   await page.context().storageState({ path: '.auth/user.json' });
 });
-```
 
-```typescript
 // playwright.config.ts — every test starts authenticated
 export default defineConfig({
   projects: [
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
-    {
-      name: 'tests',
-      use: { storageState: '.auth/user.json' },
-      dependencies: ['setup'],
-    },
+    { name: 'tests', use: { storageState: '.auth/user.json' }, dependencies: ['setup'] },
   ],
 });
 ```
 
 Add `.auth/` to `.gitignore`. Auth state files contain session tokens.
 
----
-
 ## API-Based Login (Skip UI)
 
 Faster than browser login. Use for all non-auth tests.
 
 ```typescript
-// auth.setup.ts — no browser rendering needed
 import { test as setup, expect } from '@playwright/test';
 
 setup('authenticate via API', async ({ request }) => {
@@ -65,8 +56,6 @@ setup('API login with localStorage token', async ({ page }) => {
 });
 ```
 
----
-
 ## Multi-Role Authentication
 
 ```typescript
@@ -79,7 +68,6 @@ export default defineConfig({
     { name: 'unauthenticated', use: { storageState: { cookies: [], origins: [] } }, testMatch: '**/public/**' },
   ],
 });
-
 // auth.setup.ts — authenticate all roles
 const users = [
   { role: 'admin', email: 'admin@test.com', password: 'admin-pass', path: '.auth/admin.json' },
@@ -100,11 +88,9 @@ for (const user of users) {
 Role-switching fixture for comparing roles in a single test:
 
 ```typescript
-// fixtures/auth.ts
+// fixtures/auth.ts — role-switching fixture
 import { test as base, type Page } from '@playwright/test';
-
 type RoleFixtures = { loginAs: (role: 'admin' | 'user' | 'viewer') => Promise<Page> };
-
 export const test = base.extend<RoleFixtures>({
   loginAs: async ({ browser }, use) => {
     const pages: Page[] = [];
@@ -129,8 +115,6 @@ test('admin sees delete, viewer sees denied', async ({ loginAs }) => {
   await expect(viewer.getByText('Access denied')).toBeVisible();
 });
 ```
-
----
 
 ## OAuth Mocking
 
@@ -161,7 +145,7 @@ test('OAuth failure shows error', async ({ page }) => {
 });
 ```
 
-Alternative -- bypass OAuth via a test-only backend endpoint (fastest):
+Alternative -- bypass OAuth via a test-only backend endpoint (`NODE_ENV=test` only):
 
 ```typescript
 setup('inject OAuth session via API', async ({ request }) => {
@@ -172,15 +156,12 @@ setup('inject OAuth session via API', async ({ request }) => {
 });
 ```
 
----
-
 ## NextAuth / Auth.js Patterns
 
 ```typescript
 setup('NextAuth credentials login', async ({ page }) => {
   await page.goto('/api/auth/csrf');
   const { csrfToken } = JSON.parse((await page.evaluate(() => document.body.textContent))!);
-
   await page.request.post('/api/auth/callback/credentials', {
     form: { csrfToken, email: process.env.TEST_USER_EMAIL!, password: process.env.TEST_USER_PASSWORD! },
   });
@@ -188,7 +169,7 @@ setup('NextAuth credentials login', async ({ page }) => {
 });
 ```
 
-NextAuth with a mocked OAuth provider (intercept token exchange + userinfo):
+NextAuth with mocked OAuth provider:
 
 ```typescript
 setup('NextAuth Google login (mocked)', async ({ page }) => {
@@ -203,8 +184,6 @@ setup('NextAuth Google login (mocked)', async ({ page }) => {
   await page.context().storageState({ path: '.auth/google-user.json' });
 });
 ```
-
----
 
 ## MFA / 2FA Testing
 
@@ -248,8 +227,6 @@ test('login with mocked MFA', async ({ page }) => {
 });
 ```
 
----
-
 ## Password Reset Flow
 
 Intercept the reset email API to capture the token, then complete the flow:
@@ -262,13 +239,11 @@ test('complete password reset flow', async ({ page }) => {
     resetToken = (await response.json()).resetToken;
     await route.fulfill({ response });
   });
-
   await page.goto('/forgot-password');
   await page.getByLabel('Email').fill('user@test.com');
   await page.getByRole('button', { name: 'Send reset link' }).click();
   await expect(page.getByText('Reset link sent')).toBeVisible();
   expect(resetToken).toBeTruthy();
-
   await page.goto(`/reset-password?token=${resetToken}`);
   await page.getByLabel('New password', { exact: true }).fill('NewSecurePass456!');
   await page.getByLabel('Confirm new password').fill('NewSecurePass456!');
@@ -284,8 +259,6 @@ test('expired reset token shows error', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText(/expired|no longer valid/i);
 });
 ```
-
----
 
 ## Session Timeout Detection
 
@@ -317,8 +290,6 @@ test('shows expiry warning and extends session', async ({ page }) => {
 });
 ```
 
----
-
 ## Token Refresh Patterns
 
 Worker-scoped fixture that checks session validity and re-authenticates if expired:
@@ -346,11 +317,8 @@ export const test = base.extend<{}, { freshAuth: void }>({
     await use();
   }, { scope: 'worker' }],
 });
-```
 
-Verify the app's built-in token refresh works:
-
-```typescript
+// Verify the app's built-in token refresh works
 test('app refreshes expired access token', async ({ page }) => {
   await page.goto('/dashboard');
   await page.context().clearCookies({ name: 'access_token' }); // keep refresh_token
@@ -361,13 +329,10 @@ test('app refreshes expired access token', async ({ page }) => {
 });
 ```
 
----
-
 ## Logout Verification
 
 ```typescript
 test.use({ storageState: '.auth/user.json' });
-
 test('logout redirects and blocks re-access', async ({ page }) => {
   await page.goto('/dashboard');
   await page.getByRole('button', { name: /user menu|profile/i }).click();
@@ -399,8 +364,6 @@ test('logout from all devices', async ({ page }) => {
 });
 ```
 
----
-
 ## Testing the Login Flow Itself
 
 Opt OUT of storage state to test the login page as an unauthenticated user:
@@ -426,8 +389,6 @@ test.describe('login page', () => {
   });
 });
 ```
-
----
 
 ## Troubleshooting
 
