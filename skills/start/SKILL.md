@@ -202,7 +202,22 @@ git commit -m "test: add Playwright screenshot baselines"
 
 Do NOT skip this. Without committed baselines, `toHaveScreenshot()` will fail on subsequent runs.
 
+**Screenshot requirement check:**
+
+Before answering the quality gate, run this check:
+
+```bash
+# Did this task change anything visual (CSS, HTML structure, styles, colors, layout)?
+git diff HEAD~1 --stat -- '*.html' '*.css' '*.tsx' '*.jsx' '*.scss'
+```
+
+If that diff is non-empty, you MUST have at least one `toHaveScreenshot()` call in your E2E tests. No exceptions. No "computed style is good enough." No "N/A." Screenshots and computed-style assertions serve different purposes — screenshots catch visual regressions you didn't think to assert on.
+
+If you don't have one yet, write it now before proceeding.
+
 **E2E Quality Gate — answer ALL before proceeding to Step 6:**
+
+Every question below must be answered YES or DOES-NOT-APPLY. "N/A" is NOT a valid answer for questions that apply to your task. If you're unsure whether a question applies, the answer is YES it applies — write the test.
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
@@ -222,14 +237,18 @@ Do NOT skip this. Without committed baselines, `toHaveScreenshot()` will fail on
 ║  □ Would these tests catch a regression if someone broke         ║
 ║    this feature tomorrow?                                        ║
 ║                                                                  ║
-║  □ For UI changes: do visual regression tests capture            ║
-║    before/after state with toHaveScreenshot()?                   ║
+║  □ Did you change CSS, HTML, styles, colors, or layout?          ║
+║    → Then at least one test MUST use toHaveScreenshot().          ║
+║    → "Computed style assertions cover it" is NOT sufficient.     ║
+║    → Screenshots catch regressions you didn't think to assert.   ║
 ║                                                                  ║
-║  □ Are screenshot baselines committed for new pages/components?  ║
+║  □ Are screenshot baselines committed?                           ║
+║    → Run: find tests/e2e -name "*.spec.ts-snapshots" -type d     ║
+║    → If empty after a UI change, this gate FAILS.                ║
 ║                                                                  ║
 ║  If ANY answer is NO → stay in Step 5 and write the missing      ║
-║  feature tests. Then re-run --repeat-each=3 and re-answer        ║
-║  this gate. Do NOT proceed until all boxes are checked.           ║
+║  tests. Then re-run --repeat-each=3 and re-answer this gate.     ║
+║  Do NOT proceed until all boxes are checked.                     ║
 ║                                                                  ║
 ║  "Page loads without 404" is baseline, not coverage.             ║
 ╚══════════════════════════════════════════════════════════════════╝
