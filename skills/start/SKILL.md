@@ -207,6 +207,11 @@ If any test is flaky, diagnose and fix before proceeding. Do NOT move on with fl
 ║  □ Would these tests catch a regression if someone broke         ║
 ║    this feature tomorrow?                                        ║
 ║                                                                  ║
+║  □ For UI changes: do visual regression tests capture            ║
+║    before/after state with toHaveScreenshot()?                   ║
+║                                                                  ║
+║  □ Are screenshot baselines committed for new pages/components?  ║
+║                                                                  ║
 ║  If ANY answer is NO → stay in Step 5 and write the missing      ║
 ║  feature tests. Then re-run --repeat-each=3 and re-answer        ║
 ║  this gate. Do NOT proceed until all boxes are checked.           ║

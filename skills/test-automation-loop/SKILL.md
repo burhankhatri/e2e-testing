@@ -54,16 +54,26 @@ Location: `tests/e2e/`
 ```
 1. Read testing.md
 2. Set up the test environment (DB, env vars, services)
-3. Run the relevant test suite
-4. If tests fail:
+3. Ensure screenshot capture is enabled:
+   - Verify playwright.config.ts has screenshot: 'on'
+   - Verify video: 'retain-on-failure' is set
+   - Verify trace: 'on-first-retry' is set
+4. Run the relevant test suite
+5. If tests fail:
    a. Analyze failure output carefully (Phase 1 of /debug)
-   b. Form hypothesis about root cause
-   c. Fix the code (using /tdd — failing test → fix → verify)
-   d. Run tests again
-   e. Repeat until ALL tests pass
-5. If tests pass:
-   a. Run tests MULTIPLE TIMES to catch flakiness
-   b. Use /verify-done before claiming success
+   b. Check screenshot/trace artifacts in test-results/:
+      - Screenshots: what does the page look like at the failure point?
+      - Trace: open with `npx playwright show-trace` for DOM + network + console
+      - Diff images (*-diff.png): for visual regression failures, what changed?
+   c. Form hypothesis about root cause
+   d. Fix the code (using /tdd — failing test → fix → verify)
+   e. Run tests again
+   f. Repeat until ALL tests pass
+6. If tests pass:
+   a. Run visual regression suite if project uses toHaveScreenshot():
+      npx playwright test --grep @visual --repeat-each=3
+   b. Run full suite MULTIPLE TIMES to catch flakiness
+   c. Use /verify-done before claiming success
 ```
 
 ### Key Rules:
@@ -143,6 +153,52 @@ When a bug is found (manually or reported):
 6. Run the specific test multiple times to confirm stability
 
 This test permanently prevents the bug from returning.
+
+## Screenshot-Driven Debugging
+
+When test output alone isn't enough to diagnose a failure, use artifacts:
+
+### Quick diagnosis commands:
+
+```bash
+# Re-run failing test with full capture
+npx playwright test tests/e2e/failing.spec.ts --trace on --screenshot on --video on
+
+# View the trace (richest artifact — DOM snapshots, network, console)
+npx playwright show-trace test-results/failing-chromium/trace.zip
+
+# List all screenshots from last run
+ls test-results/*/test-*.png
+
+# List all visual regression diffs
+ls test-results/*/*-diff.png
+```
+
+### Visual regression failure diagnosis:
+
+When a `toHaveScreenshot()` assertion fails, Playwright generates three images:
+
+| File | Content |
+|------|---------|
+| `*-expected.png` | Committed baseline |
+| `*-actual.png` | Current render |
+| `*-diff.png` | Red overlay showing differences |
+
+**Diagnosis steps:**
+1. Compare expected vs actual — is this an intentional UI change?
+2. If intentional: `npx playwright test --update-snapshots` → commit baselines
+3. If unintentional: the diff shows exactly which region changed — fix the CSS/layout
+4. Re-run to confirm fix
+
+### When to escalate artifact capture:
+
+| Situation | Action |
+|-----------|--------|
+| Test fails, error message is clear | No extra capture needed |
+| Test fails, unclear why element isn't visible | Check screenshot at failure point |
+| Test intermittently fails | Enable trace: 'on', run with --repeat-each=10 |
+| Visual regression diff is confusing | Compare trace DOM snapshots at the assertion step |
+| Test fails only in CI | Download CI trace artifact, compare with local trace |
 
 ## When To Use This Skill vs Others
 
