@@ -175,6 +175,31 @@ npx playwright test --repeat-each=3
 
 If any test is flaky, diagnose and fix before proceeding. Do NOT move on with flaky tests.
 
+**E2E Quality Gate — answer ALL before proceeding to Step 6:**
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE proceeding: answer these questions honestly.            ║
+║                                                                  ║
+║  □ Do tests exercise the feature's primary user workflow?        ║
+║    ("Page loads" is NOT a workflow)                               ║
+║                                                                  ║
+║  □ For bugfixes: does a test reproduce the original bug?         ║
+║                                                                  ║
+║  □ For nav changes: do tests click nav items and verify          ║
+║    they route to the correct page with correct content?          ║
+║                                                                  ║
+║  □ For API changes: do tests hit the actual endpoints and        ║
+║    verify responses?                                             ║
+║                                                                  ║
+║  □ Would these tests catch a regression if someone broke         ║
+║    this feature tomorrow?                                        ║
+║                                                                  ║
+║  If ANY answer is NO → go back and write real feature tests.     ║
+║  "Page loads without 404" is baseline, not coverage.             ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 **If E2E tests are not written and passing, Step 6 (verify) MUST fail.**
 
 ---

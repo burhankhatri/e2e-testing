@@ -112,6 +112,33 @@ Keep tests green. Don't add behavior.
 | "Need to explore first" | Fine. Throw away exploration, start with TDD. |
 | "TDD will slow me down" | TDD is faster than debugging. |
 | "Just this once" | No. |
+| "Test expectation was wrong" | Was it? Or is the code wrong? Investigate before weakening. |
+
+## Never Weaken a Failing Test
+
+A test that fails is telling you something. Investigate the code, not the assertion.
+
+```
+Test expected 32px, got 20px.
+❌ Lower assertion to 16px → test passes → ship it
+✅ Investigate: Why is it 20px? Is the CSS wrong? Did the fix not work?
+```
+
+**Only three valid reasons to change a test assertion:**
+
+1. **Test had a bug** — the expectation was wrong from the start (e.g., wrong constant, copy-paste error)
+2. **Requirements changed** — the expected behavior genuinely shifted (document why)
+3. **Testing implementation details** — the test was brittle; rewrite to test behavior instead
+
+If none of these apply, the test caught a real problem. Fix the code.
+
+**The anti-pattern in action:**
+- Calendar cells should be 32px (per the bug fix making them mobile-friendly)
+- Test finds they're actually 20px
+- Agent lowers the assertion to ≥16px "to be safe"
+- The bug fix didn't actually work — and the weakened test will never catch it
+
+Weakening an assertion is deleting the test with extra steps.
 
 ## Testing Anti-Patterns
 
@@ -120,6 +147,26 @@ Keep tests green. Don't add behavior.
 3. **Mocking without understanding** — Understand side effects first, mock minimally
 4. **Incomplete mocks** — Mirror real API response structure completely
 5. **Tests as afterthought** — Testing IS implementation, not optional follow-up
+6. **Testing the helper, not the behavior** — Extracting a pure function, testing it, and calling the feature "tested"
+
+If you extract `validateRuleBody()` and write 5 tests for it, the API route that *calls* `validateRuleBody()` is still untested. Helper tests verify transformation logic. They do NOT verify:
+- Auth checks on the route
+- Database queries executing correctly
+- Error responses from the handler
+- The full request→response contract
+
+**Behavior Coverage Checklist — for each type of code you wrote, verify:**
+
+| Code you wrote | What test do you owe? |
+|---|---|
+| API route handler | Test that calls the route and checks request→response (integration or E2E) |
+| UI component with interactions | E2E test that clicks/types/drags and verifies outcomes |
+| Bug fix | Regression test that reproduces the original symptom |
+| Navigation change | E2E test that clicks nav and verifies destination renders |
+| State management logic | Test through the UI or API that triggers it, not the store directly |
+| Extracted helper/utility | Unit test — but this DOES NOT replace the above. Both are required. |
+
+**The rule:** A helper test is a bonus. The behavior test is the requirement.
 
 **Gate function before adding mocks:**
 1. "What side effects does the real method have?"

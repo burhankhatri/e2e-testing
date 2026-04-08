@@ -24,6 +24,67 @@ description: "Battle-tested Playwright E2E testing patterns for Next.js/React ap
 
 ---
 
+## Feature Tests vs Smoke Tests
+
+Not all E2E tests are equal. Know what tier you're writing.
+
+| Tier | What it tests | Example | Sufficient for feature coverage? |
+|------|--------------|---------|----------------------------------|
+| **Smoke** | Page loads, no 404, no crash | `goto('/canvas'); expect(heading).toBeVisible()` | **NO** — baseline only |
+| **Feature** | User completes a real workflow | Drag entry to project → rule created → future entries auto-link | **YES** — this is the goal |
+| **Navigation** | Links route correctly, active states work | Click "Canvas" in sidebar → URL is /canvas → heading visible | **Required when nav changes** |
+
+**The rule:** Every feature shipped MUST have at least one tier-2 (feature) E2E test. Smoke tests are free but DO NOT count toward feature coverage.
+
+**Ask yourself:** "If someone broke this feature tomorrow, would my E2E tests catch it?" If the answer is "only if they deleted the entire page" — you wrote smoke tests, not feature tests.
+
+### Navigation Tests — Required When Nav Changes
+
+When you add or modify navigation (sidebar items, mobile tab bar, header links, route changes), you MUST write tests that verify:
+
+1. Nav item is visible at the correct viewport (desktop sidebar, mobile tab bar)
+2. Clicking it navigates to the correct URL
+3. Destination page renders its primary content (not just "no 404")
+4. Active/selected state highlights correctly
+
+**Desktop + Mobile navigation test template:**
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Navigation — Desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('sidebar contains Canvas link and navigates correctly', async ({ page }) => {
+    await page.goto('/');
+    const sidebar = page.getByRole('navigation');
+    const canvasLink = sidebar.getByRole('link', { name: 'Canvas' });
+    await expect(canvasLink).toBeVisible();
+    await canvasLink.click();
+    await page.waitForURL('/canvas');
+    await expect(page.getByRole('heading', { name: 'Canvas' })).toBeVisible();
+  });
+});
+
+test.describe('Navigation — Mobile', () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test('mobile tab bar contains Canvas and navigates correctly', async ({ page }) => {
+    await page.goto('/');
+    const tabBar = page.getByRole('navigation', { name: /mobile|tab/i });
+    const canvasTab = tabBar.getByRole('link', { name: 'Canvas' });
+    await expect(canvasTab).toBeVisible();
+    await canvasTab.click();
+    await page.waitForURL('/canvas');
+    await expect(page.getByRole('heading', { name: 'Canvas' })).toBeVisible();
+  });
+});
+```
+
+Adapt names/selectors to the actual app. The structure is: find nav → find link → click → verify URL → verify content.
+
+---
+
 ## Next.js Config (App Router + Pages Router)
 
 ```typescript

@@ -51,6 +51,31 @@ npx playwright test
 
 If this command fails because Playwright is not installed or no E2E tests exist, **verification FAILS**. Go back to Step 5 of `/start` and do the work. Do not rationalize skipping E2E.
 
+## Test Proportionality Check
+
+Before claiming completion, assess whether tests are proportional to the code you shipped.
+
+**For each piece of production code, identify its test:**
+
+| Production code you wrote | Required test (AT MINIMUM) |
+|---|---|
+| API route handler (GET/POST/PUT/DELETE) | Integration test or E2E that calls the route, checks status + body |
+| UI component with interactions (>50 lines) | E2E that clicks/types/drags and verifies outcomes |
+| Bug fix (any) | Regression test that reproduces the original symptom |
+| Navigation change (sidebar, mobile nav, routes) | E2E that clicks nav item and verifies destination |
+| Extracted helper/utility | Unit test — BUT the feature using it also needs its own test |
+| State management / data flow change | Test through the UI or API that triggers the flow |
+
+**Proportionality failures (verification MUST fail if any apply):**
+
+- 200+ lines of UI code shipped with 0 component/E2E tests covering interactions
+- API routes shipped with only input-validation helper tests (route handler itself untested)
+- Bug fix shipped without a regression test reproducing the original symptom
+- Navigation added/changed without an E2E test clicking the nav and verifying the destination
+- "All N tests pass" where N hasn't increased despite new production code
+
+**The check:** Look at `git diff --stat` for the work being verified. For every production file changed, point to the test that covers it. If you can't point to one, go back and write it.
+
 ## Patterns
 
 **Tests:**
