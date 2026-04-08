@@ -2,6 +2,28 @@
 
 A set of 8 global skills for [Claude Code](https://claude.ai/claude-code) that enforce disciplined, test-driven agentic development. Install once, use in any project.
 
+## What This Solves
+
+Without skills, AI coding agents write tutorial-quality code. They use brittle CSS selectors, skip tests, claim "done" without evidence, and guess at bug fixes. These skills fix that.
+
+| Problem | What the skills do |
+|---|---|
+| Agent writes fragile `page.locator('.btn')` selectors | Forces `getByRole()` locators that survive redesigns |
+| Agent skips E2E tests ("unit tests already cover this") | `/start` makes Playwright E2E mandatory — literally cannot skip it |
+| Agent claims "done" after writing code | `/verify-done` requires fresh test output as proof |
+| Agent guesses at fixes and goes in circles | `/debug` forces 4-phase root cause analysis before any fix |
+| No visual regression testing | `toHaveScreenshot()` with baselines, masking, CI font rendering |
+| Tests break in CI but pass locally | CI pipeline patterns with sharding, artifacts, Docker for consistency |
+| Agent writes "page loads" smoke tests and calls it coverage | Quality gates reject smoke-only coverage — demands real user workflow tests |
+| No screenshots or traces for debugging | Screenshots every test, video on failure, traces on retry — all automatic |
+
+### What's included
+
+- **8 orchestrated skills** that route tasks through the right pipeline
+- **17 deep-dive reference guides** (6,400+ lines) covering locators, auth, fixtures, mocking, visual regression, screenshots, CI/CD, debugging, flaky tests, Next.js, POM, test data, clock mocking, iframes, API testing, and test organization
+- **Production-tested Playwright patterns** adapted from the [TestDino Playwright Skill](https://github.com/testdino-hq/playwright-skill)
+- **Autonomous loop testing** — write tests, let the agent iterate until green, walk away
+
 ## Skills
 
 | Skill | Command | What it does |
