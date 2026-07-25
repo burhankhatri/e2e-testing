@@ -73,9 +73,32 @@ Location: `tests/e2e/`
    ```
 4. **Create `playwright.config.ts` if it doesn't exist.** Use the config template from `/e2e-playwright`.
 5. **Create `tests/e2e/` directory** if it doesn't exist.
-6. Commit: `git commit -m "chore: add test infrastructure (testing.md, playwright)"`
+6. **Create CI so the suite runs without anyone remembering.** Rules written in prompts evaporate between sessions — CI is the enforcement. (This step exists because an audited project carried a red test for a month; nothing was running the suite.) Write `.github/workflows/tests.yml`, adjusting env vars per `testing.md`:
 
-**If it exists:** Read it. Then verify Playwright is installed (`npx playwright --version`). If not, install it now before proceeding.
+```yaml
+name: tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run test:run --if-present   # unit + integration
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - name: Fail on permanently-skipped tests
+        run: |
+          if grep -rnE "test\.skip\(true|it\.skip\(true|describe\.skip\(true" tests/ src/ 2>/dev/null; then
+            echo "Permanently skipped tests found — skipped is failing"; exit 1
+          fi
+```
+
+7. Commit: `git commit -m "chore: add test infrastructure (testing.md, playwright, CI)"`
+
+**If it exists:** Read it. Then verify Playwright is installed (`npx playwright --version`) — if not, install it now. Then verify `.github/workflows/tests.yml` exists — if not, create it now (sub-step 6) before proceeding.
 
 ---
 
@@ -246,6 +269,17 @@ Every question below must be answered YES or DOES-NOT-APPLY. "N/A" is NOT a vali
 ║    → Run: find tests/e2e -name "*.spec.ts-snapshots" -type d     ║
 ║    → If empty after a UI change, this gate FAILS.                ║
 ║                                                                  ║
+║  □ Does the run output show ZERO skipped tests?                  ║
+║    → "7 passed, 18 skipped" is a FAILING suite wearing green.    ║
+║                                                                  ║
+║  □ Are the self-audit greps clean? (see /e2e-playwright:         ║
+║    test.skip(true / .or(Sign in) / waitForTimeout)               ║
+║    → Any hit = the coverage claim is false. Gate FAILS.          ║
+║                                                                  ║
+║  □ Do feature tests run AUTHENTICATED (storage state)?           ║
+║    → No auth setup? STOP and create it with the user. Do not     ║
+║      skip-guard, do not .or() around the sign-in wall.           ║
+║                                                                  ║
 ║  If ANY answer is NO → stay in Step 5 and write the missing      ║
 ║  tests. Then re-run --repeat-each=3 and re-answer this gate.     ║
 ║  Do NOT proceed until all boxes are checked.                     ║
@@ -265,7 +299,8 @@ Every question below must be answered YES or DOES-NOT-APPLY. "N/A" is NOT a vali
 Run `/verify-done`.
 
 - Run the FULL test suite (unit + integration + e2e)
-- Show fresh output as evidence
+- Show fresh output as evidence — full counts: passed / failed / SKIPPED (skips must be zero or justified)
+- Confirm `.github/workflows/tests.yml` exists (Step 0.6) so the suite keeps running after this session
 - Do NOT claim complete until verification passes
 
 **If verification fails:** Go back to the relevant step and fix. Do not skip re-verification.
