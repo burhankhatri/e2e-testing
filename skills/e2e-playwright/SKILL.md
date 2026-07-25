@@ -556,10 +556,12 @@ DEBUG=pw:api npx playwright test                   # Verbose API logs
 ### Self-audit before claiming E2E coverage
 
 ```bash
-grep -rn  "test\.skip(true"        tests/e2e && echo "FAIL: permanently skipped tests"
-grep -rnE "\.or\(.*[Ss]ign.?[Ii]n" tests/e2e && echo "FAIL: auth-wall tautology"
-grep -rn  "waitForTimeout"         tests/e2e && echo "FAIL: arbitrary waits"
+grep -rn   "test\.skip(true" tests/e2e && echo "FAIL: permanently skipped tests"
+grep -rniE "sign.?in.*\.or\(|\.or\(.*sign.?in" tests/e2e && echo "FAIL: auth-wall tautology"
+grep -rn   "waitForTimeout"  tests/e2e && echo "FAIL: arbitrary waits"
 ```
+
+(The tautology grep matches both operand orders — `signIn.or(content)` and `content.or(signIn)` — because real offenders write it both ways.)
 
 Any hit means the coverage claim is false. Fix the tests before proceeding — do not report them as passing.
 
