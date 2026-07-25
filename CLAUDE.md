@@ -7,7 +7,11 @@
 2. NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST  
 3. NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 4. IF A SKILL APPLIES, YOU MUST USE IT — NO RATIONALIZING
+5. A SKIPPED TEST IS A FAILING TEST — NEVER SKIP, WEAKEN, OR DELETE A TEST TO GET GREEN
+6. IF A TEST CAN'T BE MADE REAL (AUTH, TEST DB, CREDENTIALS) — STOP AND ASK, DON'T MOCK AROUND IT
 ```
+
+**Enforcement lives in machinery, not prompts.** These rules only hold between sessions if CI runs the suite on every push — `/start` Step 0 scaffolds `.github/workflows/tests.yml` before any feature work.
 
 ## Workflow Decision Tree
 

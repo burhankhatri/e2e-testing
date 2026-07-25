@@ -15,6 +15,9 @@ Without skills, AI coding agents write tutorial-quality code. They use brittle C
 | No visual regression testing | `toHaveScreenshot()` with baselines, masking, CI font rendering |
 | Tests break in CI but pass locally | CI pipeline patterns with sharding, artifacts, Docker for consistency |
 | Agent writes "page loads" smoke tests and calls it coverage | Quality gates reject smoke-only coverage — demands real user workflow tests |
+| Agent `test.skip`s its way to green | Skipped tests count as failures — gates + a CI grep reject permanently-skipped tests |
+| Agent fakes auth (`.or(signIn)` assertions, skip-guards) | Real storage-state auth or stop-and-ask — feature tests must run signed in |
+| Rules obeyed only while the prompt is on screen | `/start` scaffolds GitHub Actions CI on day one — the suite runs even when nobody remembers |
 | No screenshots or traces for debugging | Screenshots every test, video on failure, traces on retry — all automatic |
 
 ### What's included
@@ -61,7 +64,7 @@ That's it. `/start` handles everything — it routes your task through the corre
 
 ### What `/start` does
 
-1. **Creates `testing.md`** — auto-detects your project's test setup and writes a testing guide (if one doesn't exist)
+1. **Creates `testing.md` + CI** — auto-detects your project's test setup, writes a testing guide, and scaffolds a GitHub Actions workflow so the suite runs on every push (if they don't exist)
 2. **Routes the task** — feature, bugfix, refactor, or e2e-only each get the right skill chain
 3. **Runs TDD** — every implementation step follows red-green-refactor
 4. **Writes E2E tests** — Playwright tests for every user-facing flow (mandatory, not optional)
