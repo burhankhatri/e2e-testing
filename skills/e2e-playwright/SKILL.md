@@ -19,6 +19,7 @@ description: "Battle-tested Playwright E2E testing patterns for Next.js/React ap
 8. **Fixtures over globals** — share state via `test.extend()`, not module-level variables
 9. **One behavior per test** — multiple related `expect()` calls are fine
 10. **Mock external services only** — never mock your own app; mock third-party APIs, payment gateways, email
+11. **Real auth or stop** — never `test.skip(true, ...)` around missing login, never `.or(signIn)` assertions that pass on the auth wall. If auth setup doesn't exist, STOP and set up storage state with the user (one-time). A test that passes signed-out is not a feature test.
 
 **Deep dives available in `references/` directory — read them when working on the relevant topic.**
 
@@ -290,6 +291,21 @@ git commit -m "test: add/update Playwright screenshot baselines"
 
 ## Authentication
 
+**If auth setup does not exist yet, STOP and create it with the user before writing feature tests.** You cannot mint a test account yourself — ask for the test user credentials once, wire the storage-state pattern below, and every future test runs authenticated. Two patterns are banned outright:
+
+```typescript
+// BANNED: the test permanently skips itself — it has never actually run
+test.skip(!(await isSignedIn(page)), 'Not authenticated');
+
+// BANNED: passes when the feature is completely inaccessible
+await expect(
+  page.getByRole('heading', { name: 'Sign in' })
+    .or(page.getByRole('heading', { name: 'Canvas' }))
+).toBeVisible();
+```
+
+Both report green while verifying nothing. (Audit result: one project shipped 25 "E2E tests" where 18 were skip-guarded and had never executed once.) Skipped is failing — write the auth setup instead.
+
 ### Storage state reuse (default pattern):
 
 ```typescript
@@ -533,8 +549,19 @@ DEBUG=pw:api npx playwright test                   # Verbose API logs
 | 8 | Mocking own app | Only mock third-party services |
 | 9 | Module-level variables | Fixtures via `test.extend()` |
 | 10 | No traces in CI | `trace: 'on-first-retry'` in config |
+| 11 | `test.skip(true, ...)` auth guards | One-time storage-state setup — skipped tests are failing tests |
 
 **For all 20 pitfalls with full code examples, read `references/common-pitfalls.md`**
+
+### Self-audit before claiming E2E coverage
+
+```bash
+grep -rn  "test\.skip(true"        tests/e2e && echo "FAIL: permanently skipped tests"
+grep -rnE "\.or\(.*[Ss]ign.?[Ii]n" tests/e2e && echo "FAIL: auth-wall tautology"
+grep -rn  "waitForTimeout"         tests/e2e && echo "FAIL: arbitrary waits"
+```
+
+Any hit means the coverage claim is false. Fix the tests before proceeding — do not report them as passing.
 
 ---
 

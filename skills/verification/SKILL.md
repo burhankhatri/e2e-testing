@@ -33,13 +33,28 @@ Skip any step = lying, not verifying
 
 | Claim | Requires | Not Sufficient |
 |-------|----------|----------------|
-| "Tests pass" | Test command output: 0 failures | Previous run, "should pass" |
+| "Tests pass" | Test command output: 0 failures AND 0 unexplained skips | Previous run, "should pass", "0 failures" with skips unmentioned |
 | "Linter clean" | Linter output: 0 errors | Partial check, extrapolation |
 | "Build succeeds" | Build command: exit 0 | Linter passing, "looks good" |
 | "Bug fixed" | Test original symptom: passes | Code changed, assumed fixed |
 | "Regression test works" | Red-green cycle verified | Test passes once |
 | "Requirements met" | Line-by-line checklist | Tests passing |
-| "E2E coverage" | `npx playwright test` output: 0 failures | "Playwright not installed", unit tests only |
+| "E2E coverage" | `npx playwright test` output: 0 failures, 0 skipped | "Playwright not installed", unit tests only |
+
+## Skipped Tests Are Failures
+
+`7 passed, 18 skipped` is a failing suite wearing green. (Real audit result: 18 of 25 E2E tests in one project were skip-guarded on auth and had NEVER executed — the suite reported green for months.)
+
+Before claiming tests pass:
+
+- Report the FULL counts: passed / failed / **skipped**.
+- Hunt for permanent and conditional skips:
+  ```bash
+  grep -rnE "test\.skip\(|describe\.skip|\.skip\(true|xit\(|it\.skip" tests/ src/
+  ```
+- Every skip needs a written justification. A conditional skip (e.g. `test.skip(true, "Not authenticated")`) means the test may have never run — prove it has actually executed (its name appears as *passed* in output) or treat it as red.
+- An assertion that accepts a failure state (e.g. `.or(signInHeading)`) is a skip in disguise — a test that cannot fail verifies nothing.
+- Skips that guard on missing infrastructure (auth, test DB, API keys) mean the infrastructure work was dodged: go set it up with the user, or verification FAILS.
 
 ## E2E Gate (when invoked from /start)
 
@@ -114,6 +129,7 @@ Before claiming completion, assess whether tests are proportional to the code yo
 
 ## Red Flags — STOP
 
+- Reporting "N passed" without mentioning skip counts
 - Using "should", "probably", "seems to"
 - Expressing satisfaction before verification ("Great!", "Perfect!", "Done!")
 - About to commit/push/PR without verification

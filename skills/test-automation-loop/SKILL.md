@@ -66,9 +66,10 @@ Location: `tests/e2e/`
       - Trace: open with `npx playwright show-trace` for DOM + network + console
       - Diff images (*-diff.png): for visual regression failures, what changed?
    c. Form hypothesis about root cause
-   d. Fix the code (using /tdd — failing test → fix → verify)
+   d. Fix the CODE — never the test (using /tdd — failing test → fix → verify).
+      Editing a test to match broken behavior requires explicit user sign-off.
    e. Run tests again
-   f. Repeat until ALL tests pass
+   f. Repeat until ALL tests pass with ZERO skipped
 6. If tests pass:
    a. Run visual regression suite if project uses toHaveScreenshot():
       npx playwright test --grep @visual --repeat-each=3
@@ -94,6 +95,10 @@ Location: `tests/e2e/`
   console.log('[DEBUG] Element visible:', await element.isVisible());
   ```
   Run with logs → analyze output → THEN fix. Remove debug logs after.
+
+- **Green by skipping is failure.** The loop converges only when the suite passes with zero skipped tests. Check the counts on every run — adding `test.skip` (or weakening an assertion) mid-loop means the loop failed, not the test.
+
+- **Hit a wall the code can't fix?** Missing test user, credentials, test database, seed data — stop and ask the user for the one-time setup. Mocking your own app or skipping the test to keep the loop moving defeats the entire point of the loop.
 
 - **If stuck after 3 attempts** → stop, escalate to the user with:
   - What you tried
