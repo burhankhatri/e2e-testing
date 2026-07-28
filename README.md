@@ -18,6 +18,7 @@ Without skills, AI coding agents write tutorial-quality code. They use brittle C
 | Agent `test.skip`s its way to green | Skipped tests count as failures — gates + a CI grep reject permanently-skipped tests |
 | Agent fakes auth (`.or(signIn)` assertions, skip-guards) | Real storage-state auth or stop-and-ask — feature tests must run signed in |
 | Rules obeyed only while the prompt is on screen | `/start` scaffolds GitHub Actions CI on day one — the suite runs even when nobody remembers |
+| Having to invoke a skill every single time | Opt-in hooks put the rules in every prompt automatically, and run your tests before "done" is allowed |
 | No screenshots or traces for debugging | Screenshots every test, video on failure, traces on retry — all automatic |
 
 ### What's included
@@ -49,6 +50,25 @@ bash install.sh
 ```
 
 This installs all skills globally to `~/.claude/skills/` and sets up the orchestrator `CLAUDE.md` at `~/.claude/CLAUDE.md`.
+
+### Enforcement hooks (optional, recommended)
+
+Skills are prompts — they only apply when they load, and the model grades itself
+against them. Hooks are run by the harness instead, so they hold even when nobody
+remembers to invoke anything. The installer copies two into `~/.claude/hooks/` and
+asks before enabling them:
+
+| Hook | Event | What it does |
+|---|---|---|
+| `tdd-remind.sh` | UserPromptSubmit | Carries the TDD rules into every prompt, so you never have to type a command to get them |
+| `tdd-verify.sh` | Stop | Runs your test suite before work can be called done. Failing **or skipped** tests send the agent back to fix them |
+
+Both stay silent when no code changed and when a project has no runnable suite, so
+ordinary conversation costs nothing. Enabling them merges into `~/.claude/settings.json`
+(backed up first, never overwritten) and needs [`jq`](https://jqlang.github.io/jq/).
+Re-run `bash install.sh` any time to turn them on later; running it twice won't
+duplicate anything. To remove them, delete the two entries under `hooks` in
+`~/.claude/settings.json`.
 
 > If you already have a `~/.claude/CLAUDE.md`, the installer will warn you and skip overwriting it. You can merge manually or replace it.
 

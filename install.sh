@@ -58,6 +58,71 @@ else
 fi
 
 echo ""
+
+# ── Enforcement hooks (opt-in) ────────────────────────────────────────────
+# Skills are prompts: they only apply when they load, and the model grades
+# itself against them. Hooks are run by the harness, so they hold even when
+# nobody remembers. This is the part that actually makes green mean green.
+HOOKS_DIR="$HOME/.claude/hooks"
+SETTINGS="$HOME/.claude/settings.json"
+
+mkdir -p "$HOOKS_DIR"
+cp "$SCRIPT_DIR/hooks/tdd-remind.sh" "$SCRIPT_DIR/hooks/tdd-verify.sh" "$HOOKS_DIR/"
+chmod +x "$HOOKS_DIR/tdd-remind.sh" "$HOOKS_DIR/tdd-verify.sh"
+echo "  Installed: ~/.claude/hooks/ (tdd-remind.sh, tdd-verify.sh)"
+echo ""
+
+wire_hooks() {
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "  ⚠ jq not found — hooks need it. Install jq, then re-run this script."
+    return 1
+  fi
+  [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
+  if ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
+    echo "  ⚠ $SETTINGS is not valid JSON — not touching it. Fix it and re-run."
+    return 1
+  fi
+  if jq -e '[.hooks.Stop[]?.hooks[]?.command] | any(test("tdd-verify"))' "$SETTINGS" >/dev/null 2>&1; then
+    echo "  Hooks already wired up — leaving settings.json alone."
+    return 0
+  fi
+
+  cp "$SETTINGS" "$SETTINGS.bak-$(date +%Y%m%d-%H%M%S)"
+  jq '. + {hooks: ((.hooks // {}) + {
+    UserPromptSubmit: ((.hooks.UserPromptSubmit // []) + [{
+      hooks: [{ type: "command", command: "\"$HOME/.claude/hooks/tdd-remind.sh\"", timeout: 10 }]
+    }]),
+    Stop: ((.hooks.Stop // []) + [{
+      hooks: [{ type: "command", command: "\"$HOME/.claude/hooks/tdd-verify.sh\"", timeout: 120, statusMessage: "Verifying tests before finishing…" }]
+    }])
+  })}' "$SETTINGS" > "$SETTINGS.tmp" \
+    && jq -e . "$SETTINGS.tmp" >/dev/null \
+    && mv "$SETTINGS.tmp" "$SETTINGS" \
+    && echo "  Wired into ~/.claude/settings.json (backup saved alongside)." \
+    || { rm -f "$SETTINGS.tmp"; echo "  ⚠ Merge failed — settings.json left unchanged."; return 1; }
+}
+
+echo "The hooks add two guarantees, enforced outside the model:"
+echo "  • every prompt carries the TDD rules, with no skill to remember"
+echo "  • before work is called done, your test suite actually runs —"
+echo "    failing or skipped tests send the agent back instead of finishing"
+echo ""
+echo "They stay quiet when no code changed, and when a project has no suite."
+echo "This edits ~/.claude/settings.json (merged, backed up, never overwritten)."
+echo ""
+if [ -t 0 ]; then
+  printf "Enable the enforcement hooks? [y/N] "
+  read -r REPLY
+  case "$REPLY" in
+    [yY]*) wire_hooks ;;
+    *) echo "  Skipped. Enable later by re-running this script." ;;
+  esac
+else
+  echo "  Non-interactive install — hooks copied but NOT enabled."
+  echo "  Re-run 'bash install.sh' from a terminal to turn them on."
+fi
+
+echo ""
 echo "=== Done! ==="
 echo ""
 echo "Installed 8 global skills to $SKILLS_DIR/"
