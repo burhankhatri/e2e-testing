@@ -46,10 +46,18 @@ case "$CMD" in
 esac
 
 OUT=$("$PM" run "$SCRIPT" ${EXTRA:+-- $EXTRA} 2>&1) ; CODE=$?
-TAIL=$(printf '%s' "$OUT" | tail -c 1500)
+# Runners emit ANSI colour and carriage returns when they think they're on a
+# TTY; strip them so the report stays readable and can't corrupt the JSON.
+TAIL=$(printf '%s' "$OUT" | tail -c 1500 \
+  | LC_ALL=C sed $'s/\033\[[0-9;?]*[a-zA-Z]//g' \
+  | LC_ALL=C tr -d '\r\000-\010\013\014\016-\037')
 
-# Number only — "0 skipped" is a healthy suite, not a problem to block on.
-SKIPNUM=$(printf '%s' "$OUT" | grep -Eio '[0-9]+ skipped' | head -1 | grep -Eo '^[0-9]+' || true)
+# Runners disagree on word order: vitest/playwright/pytest say "18 skipped",
+# node --test says "skipped 1". Match both, take the largest, and treat 0 as
+# healthy — blocking a suite that proudly reports "0 skipped" would be absurd.
+SKIPNUM=$(printf '%s' "$OUT" \
+  | grep -Eio '([0-9]+[[:space:]]+skipped|skipped[[:space:]:]+[0-9]+)' \
+  | grep -Eo '[0-9]+' | sort -rn | head -1 || true)
 
 if [ $CODE -ne 0 ]; then
   jq -n --arg r "Tests are failing, so this work is not done. Fix the CODE, not the test — do not skip, weaken, or delete any test to get to green. If a test cannot be made real without setup you can't do (auth, test DB, credentials), stop and ask the user for it.
