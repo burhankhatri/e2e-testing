@@ -51,6 +51,16 @@ bash install.sh
 
 This installs all skills globally to `~/.claude/skills/` and sets up the orchestrator `CLAUDE.md` at `~/.claude/CLAUDE.md`.
 
+**If you already have a `~/.claude/CLAUDE.md`**, the installer offers to append
+just the rules and routing tree (about 20 lines, from
+[`claude-md-essentials.md`](claude-md-essentials.md)) to the end of it — your
+existing content is never changed or removed, and a backup is written first.
+Say no and it prints the one-line command to do it later.
+
+Don't skip this part. `CLAUDE.md` loads in every session with nothing to invoke,
+so it's what actually routes work into the skills; without it they rarely fire on
+their own.
+
 ### Enforcement hooks (optional, recommended)
 
 Skills are prompts — they only apply when they load, and the model grades itself

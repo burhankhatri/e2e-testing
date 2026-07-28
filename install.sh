@@ -43,18 +43,52 @@ done
 echo ""
 
 # Handle CLAUDE.md
-if [ -f "$CLAUDE_MD" ]; then
-  echo "  ⚠ ~/.claude/CLAUDE.md already exists."
-  echo "  The new orchestrator CLAUDE.md is saved as:"
-  echo "    $SCRIPT_DIR/CLAUDE.md"
-  echo ""
-  echo "  You can:"
-  echo "    1. Merge it manually into your existing CLAUDE.md"
-  echo "    2. Replace: cp $SCRIPT_DIR/CLAUDE.md $CLAUDE_MD"
-  echo ""
-else
+# ~/.claude/CLAUDE.md loads in EVERY session with nothing to invoke, which
+# makes it the piece that actually routes work into the skills. Leaving it
+# out because a file already exists means the skills mostly never fire — so
+# offer to append the rules instead of just warning and walking away.
+MARKER_BEGIN="<!-- BEGIN e2e-testing skills — TDD rules -->"
+MARKER_END="<!-- END e2e-testing skills -->"
+
+append_essentials() {
+  cp "$CLAUDE_MD" "$CLAUDE_MD.bak-$(date +%Y%m%d-%H%M%S)"
+  {
+    printf '\n%s\n' "$MARKER_BEGIN"
+    cat "$SCRIPT_DIR/claude-md-essentials.md"
+    printf '%s\n' "$MARKER_END"
+  } >> "$CLAUDE_MD"
+  echo "  Appended the TDD rules to ~/.claude/CLAUDE.md (backup saved alongside)."
+}
+
+if [ ! -f "$CLAUDE_MD" ]; then
   cp "$SCRIPT_DIR/CLAUDE.md" "$CLAUDE_MD"
   echo "  Installed: ~/.claude/CLAUDE.md"
+elif grep -qF "$MARKER_BEGIN" "$CLAUDE_MD" 2>/dev/null; then
+  echo "  ~/.claude/CLAUDE.md already carries the TDD rules — leaving it alone."
+elif grep -qF "NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST" "$CLAUDE_MD" 2>/dev/null; then
+  echo "  ~/.claude/CLAUDE.md already states the test-first rule — leaving it alone."
+else
+  echo "  ⚠ ~/.claude/CLAUDE.md already exists, and it is the file that routes"
+  echo "    work into these skills. Without the rules in it, the skills will"
+  echo "    rarely fire on their own."
+  echo ""
+  echo "    Offered: append ~20 lines (the Critical Rules + routing tree) to the"
+  echo "    END of your file. Nothing existing is changed or removed."
+  echo ""
+  if [ -t 0 ]; then
+    printf "  Append the TDD rules to your CLAUDE.md? [y/N] "
+    read -r REPLY
+    case "$REPLY" in
+      [yY]*) append_essentials ;;
+      *) echo "  Skipped. To do it later:"
+         echo "    cat $SCRIPT_DIR/claude-md-essentials.md >> $CLAUDE_MD" ;;
+    esac
+  else
+    echo "  Non-interactive install — not modifying your CLAUDE.md."
+    echo "  To add the rules:"
+    echo "    cat $SCRIPT_DIR/claude-md-essentials.md >> $CLAUDE_MD"
+  fi
+  echo ""
 fi
 
 echo ""
