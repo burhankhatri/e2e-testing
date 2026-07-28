@@ -8,7 +8,15 @@ SKILLS_DIR="$HOME/.claude/skills"
 CLAUDE_MD="$HOME/.claude/CLAUDE.md"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "=== Installing Global Claude Code Skills ==="
+echo "=== Test-First Skills for Claude Code ==="
+echo ""
+echo "What this is for:"
+echo "  Claude writes code fast, but it will also tell you something works"
+echo "  when it doesn't. This makes Claude write a test BEFORE the code, and"
+echo "  actually run your tests before it says the work is done."
+echo ""
+echo "It will ask you 2 yes/no questions. Nothing is changed without asking,"
+echo "and anything it edits gets backed up first."
 echo ""
 
 # Create skills directory
@@ -57,35 +65,43 @@ append_essentials() {
     cat "$SCRIPT_DIR/claude-md-essentials.md"
     printf '%s\n' "$MARKER_END"
   } >> "$CLAUDE_MD"
-  echo "  Appended the TDD rules to ~/.claude/CLAUDE.md (backup saved alongside)."
+  echo "  Done — rules added to the bottom of your file. Old copy saved next to it."
 }
 
 if [ ! -f "$CLAUDE_MD" ]; then
   cp "$SCRIPT_DIR/CLAUDE.md" "$CLAUDE_MD"
-  echo "  Installed: ~/.claude/CLAUDE.md"
+  echo "  Set up your standing notes for Claude: ~/.claude/CLAUDE.md"
 elif grep -qF "$MARKER_BEGIN" "$CLAUDE_MD" 2>/dev/null; then
-  echo "  ~/.claude/CLAUDE.md already carries the TDD rules — leaving it alone."
+  echo "  Your notes already have these rules — nothing to do."
 elif grep -qF "NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST" "$CLAUDE_MD" 2>/dev/null; then
-  echo "  ~/.claude/CLAUDE.md already states the test-first rule — leaving it alone."
+  echo "  Your notes already say to test first — leaving them alone."
 else
-  echo "  ⚠ ~/.claude/CLAUDE.md already exists, and it is the file that routes"
-  echo "    work into these skills. Without the rules in it, the skills will"
-  echo "    rarely fire on their own."
+  echo "  ── Question 1 of 2 ──────────────────────────────────────────────"
   echo ""
-  echo "    Offered: append ~20 lines (the Critical Rules + routing tree) to the"
-  echo "    END of your file. Nothing existing is changed or removed."
+  echo "  You already have a file at ~/.claude/CLAUDE.md. That's your"
+  echo "  standing notes to Claude — it reads them at the start of every"
+  echo "  chat. If the testing rules aren't in there, Claude will usually"
+  echo "  ignore them."
+  echo ""
+  echo "  We can add about 20 lines to the BOTTOM of that file: the testing"
+  echo "  rules, plus a short list of when to use each skill."
+  echo ""
+  echo "  Saying yes:  nothing you wrote is changed or deleted, and a copy"
+  echo "               of your current file is saved first."
+  echo "  Saying no:   the skills still install, but Claude will mostly"
+  echo "               forget to use them."
   echo ""
   if [ -t 0 ]; then
-    printf "  Append the TDD rules to your CLAUDE.md? [y/N] "
+    printf "  Add the testing rules to your notes? [y/N] "
     read -r REPLY
     case "$REPLY" in
       [yY]*) append_essentials ;;
-      *) echo "  Skipped. To do it later:"
+      *) echo "  Skipped. You can add them any time by running:"
          echo "    cat $SCRIPT_DIR/claude-md-essentials.md >> $CLAUDE_MD" ;;
     esac
   else
-    echo "  Non-interactive install — not modifying your CLAUDE.md."
-    echo "  To add the rules:"
+    echo "  (Not a terminal, so nothing was asked or changed.)"
+    echo "  To add the rules yourself:"
     echo "    cat $SCRIPT_DIR/claude-md-essentials.md >> $CLAUDE_MD"
   fi
   echo ""
@@ -103,21 +119,23 @@ SETTINGS="$HOME/.claude/settings.json"
 mkdir -p "$HOOKS_DIR"
 cp "$SCRIPT_DIR/hooks/tdd-remind.sh" "$SCRIPT_DIR/hooks/tdd-verify.sh" "$HOOKS_DIR/"
 chmod +x "$HOOKS_DIR/tdd-remind.sh" "$HOOKS_DIR/tdd-verify.sh"
-echo "  Installed: ~/.claude/hooks/ (tdd-remind.sh, tdd-verify.sh)"
+echo "  Copied 2 helper scripts to ~/.claude/hooks/ (not switched on yet)"
 echo ""
 
 wire_hooks() {
   if ! command -v jq >/dev/null 2>&1; then
-    echo "  ⚠ jq not found — hooks need it. Install jq, then re-run this script."
+    echo "  Can't switch these on: a tool called 'jq' isn't installed."
+    echo "  Install it (on a Mac: brew install jq), then run this script again."
     return 1
   fi
   [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
   if ! jq -e . "$SETTINGS" >/dev/null 2>&1; then
-    echo "  ⚠ $SETTINGS is not valid JSON — not touching it. Fix it and re-run."
+    echo "  Your ~/.claude/settings.json has a typo in it, so it wasn't touched."
+    echo "  Fix that file, then run this script again."
     return 1
   fi
   if jq -e '[.hooks.Stop[]?.hooks[]?.command] | any(test("tdd-verify"))' "$SETTINGS" >/dev/null 2>&1; then
-    echo "  Hooks already wired up — leaving settings.json alone."
+    echo "  These are already switched on — nothing to do."
     return 0
   fi
 
@@ -132,47 +150,63 @@ wire_hooks() {
   })}' "$SETTINGS" > "$SETTINGS.tmp" \
     && jq -e . "$SETTINGS.tmp" >/dev/null \
     && mv "$SETTINGS.tmp" "$SETTINGS" \
-    && echo "  Wired into ~/.claude/settings.json (backup saved alongside)." \
-    || { rm -f "$SETTINGS.tmp"; echo "  ⚠ Merge failed — settings.json left unchanged."; return 1; }
+    && echo "  Done — both are on. Old settings file saved next to it." \
+    || { rm -f "$SETTINGS.tmp"; echo "  Something went wrong — your settings were left as they were."; return 1; }
 }
 
-echo "The hooks add two guarantees, enforced outside the model:"
-echo "  • every prompt carries the TDD rules, with no skill to remember"
-echo "  • before work is called done, your test suite actually runs —"
-echo "    failing or skipped tests send the agent back instead of finishing"
+echo "  ── Question 2 of 2 ──────────────────────────────────────────────"
 echo ""
-echo "They stay quiet when no code changed, and when a project has no suite."
-echo "This edits ~/.claude/settings.json (merged, backed up, never overwritten)."
+echo "  Two optional helpers. Unlike the rules above, these are run by"
+echo "  your computer, not by Claude — so Claude can't forget them or"
+echo "  talk itself out of them."
+echo ""
+echo "    1. A reminder. Every message you send quietly re-states the"
+echo "       testing rules, so you never have to type a command."
+echo ""
+echo "    2. A checker. When Claude thinks it has finished, your tests"
+echo "       are actually run. If a test fails — or was skipped — Claude"
+echo "       is sent back to fix it instead of telling you it's done."
+echo ""
+echo "  They stay out of your way: nothing runs when you haven't changed"
+echo "  any code, or in projects that don't have tests yet."
+echo ""
+echo "  Saying yes:  adds 2 lines to ~/.claude/settings.json. A copy is"
+echo "               saved first, and nothing already in there is removed."
+echo "  Saying no:   the skills still work; you just have to ask for them."
 echo ""
 if [ -t 0 ]; then
-  printf "Enable the enforcement hooks? [y/N] "
+  printf "  Switch on the reminder and the checker? [y/N] "
   read -r REPLY
   case "$REPLY" in
     [yY]*) wire_hooks ;;
-    *) echo "  Skipped. Enable later by re-running this script." ;;
+    *) echo "  Skipped. Run this script again any time to switch them on." ;;
   esac
 else
-  echo "  Non-interactive install — hooks copied but NOT enabled."
-  echo "  Re-run 'bash install.sh' from a terminal to turn them on."
+  echo "  (Not a terminal, so nothing was asked or changed.)"
+  echo "  Run 'bash install.sh' in a terminal to switch them on."
 fi
 
 echo ""
-echo "=== Done! ==="
+echo "=== All set ==="
 echo ""
-echo "Installed 8 global skills to $SKILLS_DIR/"
+echo "Open Claude Code in any project and type one of these:"
 echo ""
-echo "Skills available:"
-echo "  /start                  — master orchestrator: routes tasks through the full pipeline"
-echo "  /tdd                    — strict red-green-refactor TDD"
-echo "  /debug                  — 4-phase root cause debugging"
-echo "  /verify-done            — evidence before completion claims"
-echo "  /brainstorm-and-plan    — design + implementation planning"
-echo "  /e2e-playwright         — Playwright E2E golden rules + patterns"
-echo "  /test-loop              — autonomous test-fix iteration cycle"
-echo "  /code-review            — two-stage spec + quality review"
+echo "  /start <what you want>   The whole routine: plan it, write the test"
+echo "                           first, build it, then prove it works."
+echo "                           Start here — it runs the rest for you."
 echo ""
-echo "Next steps:"
-echo "  1. Open Claude Code in any project"
-echo "  2. Skills activate automatically based on context"
-echo "  3. Or invoke directly: /tdd, /debug, /test-loop, etc."
-echo "  4. Create a testing.md in your project root (see /test-loop)"
+echo "  /tdd                     Build one piece, test written first"
+echo "  /debug                   Something's broken — find the real cause"
+echo "                           before changing anything"
+echo "  /verify-done             Prove it works before believing it"
+echo "  /brainstorm-and-plan     Think a design through before any code"
+echo "  /e2e-playwright          Tests that click through your app like a user"
+echo "  /test-loop               Let Claude keep fixing until tests pass"
+echo "  /code-review             Check finished work against the plan"
+echo ""
+echo "Try this first:"
+echo "  /start add a login page"
+echo ""
+echo "You should see it write a test, watch it fail, then write the code."
+echo "That failing test is the point — it proves the test actually checks"
+echo "something. If you never see one fail, it isn't really testing."
