@@ -32,6 +32,7 @@ SKILLS=(
   "e2e-playwright"
   "test-automation-loop"
   "code-review"
+  "toggle-tdd"
 )
 
 for skill in "${SKILLS[@]}"; do
@@ -204,6 +205,9 @@ echo "  /brainstorm-and-plan     Think a design through before any code"
 echo "  /e2e-playwright          Tests that click through your app like a user"
 echo "  /test-loop               Let Claude keep fixing until tests pass"
 echo "  /code-review             Check finished work against the plan"
+echo ""
+echo "Want the reminder and the test-checker off? No need to remember a"
+echo "command — just tell Claude 'turn off the TDD checks' and it will."
 echo ""
 echo "Try this first:"
 echo "  /start add a login page"
