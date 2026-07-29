@@ -91,6 +91,18 @@ SKIPNUM=$(printf '%s' "$OUT" \
   | grep -Eo '[0-9]+' | sort -rn | head -1 || true)
 
 if [ $CODE -ne 0 ]; then
+  # A nonzero exit doesn't always mean a test failed — it can mean the test
+  # tooling never got off the ground (missing package, broken import). Same
+  # exit code, completely different fix: telling the agent to "fix the code"
+  # for a missing dependency sends it hunting for a bug that isn't there.
+  if printf '%s' "$OUT" | grep -qiE \
+    'ModuleNotFoundError|ImportError|ERROR collecting|error(s)? during collection|Cannot find module|MODULE_NOT_FOUND|command not found|No such file or directory'; then
+    jq -n --arg r "The test suite could not even start — this looks like a missing dependency or a broken environment, not a bug in the code. Install whatever the error names below, or ask the user to, then try again.
+
+$TAIL" '{decision:"block",reason:$r}'
+    exit 0
+  fi
+
   jq -n --arg r "Tests are failing, so this work is not done. Fix the CODE, not the test — do not skip, weaken, or delete any test to get to green. If a test cannot be made real without setup you can't do (auth, test DB, credentials), stop and ask the user for it.
 
 $TAIL" '{decision:"block",reason:$r}'
