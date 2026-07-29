@@ -23,29 +23,56 @@ CHANGED=$(git status --porcelain 2>/dev/null \
   | grep -Eic '\.(ts|tsx|js|jsx|mjs|cjs|py|swift|go|rb|rs|java|kt)"?$' || true)
 [ "${CHANGED:-0}" -eq 0 ] && exit 0
 
-[ -f package.json ] || exit 0
+# Work out how to run this project's tests. Prefer an explicit script, but
+# fall back to the runner the project obviously uses: a suite that exists
+# without being wired to a script is exactly the case that used to slip past
+# this hook entirely, which made it silent on the projects most likely to
+# have been built in a hurry.
+RUN=""
 
-# Pick a runner that exits on its own — never a watch-mode script.
-PM=npm
-[ -f pnpm-lock.yaml ] && PM=pnpm
-[ -f yarn.lock ] && PM=yarn
-[ -f bun.lockb ] && PM=bun
+if [ -f package.json ]; then
+  PM=npm
+  [ -f pnpm-lock.yaml ] && PM=pnpm
+  [ -f yarn.lock ] && PM=yarn
+  [ -f bun.lockb ] && PM=bun
 
-SCRIPT=""
-for s in test:run test:ci test; do
-  if jq -e --arg s "$s" '.scripts[$s] // empty' package.json >/dev/null 2>&1; then SCRIPT="$s"; break; fi
-done
-[ -z "$SCRIPT" ] && exit 0
+  SCRIPT=""
+  for s in test:run test:ci test; do
+    if jq -e --arg s "$s" '.scripts[$s] // empty' package.json >/dev/null 2>&1; then SCRIPT="$s"; break; fi
+  done
 
-CMD=$(jq -r --arg s "$SCRIPT" '.scripts[$s]' package.json)
-EXTRA=""
-# `vitest` with no subcommand watches forever; force a single run.
-case "$CMD" in
-  *vitest*) case "$CMD" in *" run"*|*--run*) ;; *) EXTRA="--run" ;; esac ;;
-  *--watch*) exit 0 ;;
-esac
+  if [ -n "$SCRIPT" ]; then
+    CMD=$(jq -r --arg s "$SCRIPT" '.scripts[$s]' package.json)
+    case "$CMD" in
+      # a watch-mode script never exits; leave it alone rather than hang
+      *--watch*|*watch*) exit 0 ;;
+      # bare `vitest` also watches forever — force a single run
+      *vitest*) case "$CMD" in
+                  *" run"*|*--run*) RUN="$PM run $SCRIPT" ;;
+                  *)                RUN="$PM run $SCRIPT -- --run" ;;
+                esac ;;
+      *) RUN="$PM run $SCRIPT" ;;
+    esac
+  fi
+fi
 
-OUT=$("$PM" run "$SCRIPT" ${EXTRA:+-- $EXTRA} 2>&1) ; CODE=$?
+# No script, but there may still be a suite sitting right there.
+# NB: `ls a b` exits non-zero when ANY operand is missing, even if others
+# matched — so check the expanded globs for a real file instead.
+any_exists() { for f in "$@"; do [ -e "$f" ] && return 0; done; return 1; }
+
+if [ -z "$RUN" ]; then
+  if any_exists ./*.test.js ./*.test.mjs ./*.test.cjs \
+                tests/*.test.js tests/*.test.mjs test/*.test.js test/*.test.mjs; then
+    command -v node >/dev/null 2>&1 && RUN="node --test"
+  elif any_exists ./test_*.py tests/test_*.py test/test_*.py; then
+    command -v pytest >/dev/null 2>&1 && RUN="pytest -q"
+  fi
+fi
+
+[ -z "$RUN" ] && exit 0
+
+OUT=$($RUN 2>&1) ; CODE=$?
 # Runners emit ANSI colour and carriage returns when they think they're on a
 # TTY; strip them so the report stays readable and can't corrupt the JSON.
 TAIL=$(printf '%s' "$OUT" | tail -c 1500 \
