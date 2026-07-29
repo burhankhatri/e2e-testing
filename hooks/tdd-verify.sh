@@ -10,6 +10,10 @@
 #   - tests fail, or tests are skipped -> block, hand the output back
 set -u
 
+# Switched off via `bash toggle.sh off` — check this before anything else,
+# including reading stdin.
+[ -f "$HOME/.claude/hooks/.disabled" ] && exit 0
+
 INPUT=$(cat 2>/dev/null || echo '{}')
 
 # Never fight our own previous block — prevents a stop/fix/stop loop.

@@ -4,6 +4,9 @@
 # Stays quiet outside code projects so it isn't noise in a notes folder.
 set -u
 
+# Switched off via `bash toggle.sh off` — check this before anything else.
+[ -f "$HOME/.claude/hooks/.disabled" ] && exit 0
+
 looks_like_code=0
 git rev-parse --git-dir >/dev/null 2>&1 && looks_like_code=1
 for f in package.json pyproject.toml go.mod Cargo.toml Gemfile pom.xml build.gradle Package.swift; do

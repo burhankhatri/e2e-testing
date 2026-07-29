@@ -117,9 +117,10 @@ HOOKS_DIR="$HOME/.claude/hooks"
 SETTINGS="$HOME/.claude/settings.json"
 
 mkdir -p "$HOOKS_DIR"
-cp "$SCRIPT_DIR/hooks/tdd-remind.sh" "$SCRIPT_DIR/hooks/tdd-verify.sh" "$HOOKS_DIR/"
-chmod +x "$HOOKS_DIR/tdd-remind.sh" "$HOOKS_DIR/tdd-verify.sh"
+cp "$SCRIPT_DIR/hooks/tdd-remind.sh" "$SCRIPT_DIR/hooks/tdd-verify.sh" "$SCRIPT_DIR/toggle.sh" "$HOOKS_DIR/"
+chmod +x "$HOOKS_DIR/tdd-remind.sh" "$HOOKS_DIR/tdd-verify.sh" "$HOOKS_DIR/toggle.sh"
 echo "  Copied 2 helper scripts to ~/.claude/hooks/ (not switched on yet)"
+echo "  You can turn them off any time with:  bash ~/.claude/hooks/toggle.sh off"
 echo ""
 
 wire_hooks() {

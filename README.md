@@ -77,8 +77,20 @@ Both stay silent when no code changed and when a project has no runnable suite, 
 ordinary conversation costs nothing. Enabling them merges into `~/.claude/settings.json`
 (backed up first, never overwritten) and needs [`jq`](https://jqlang.github.io/jq/).
 Re-run `bash install.sh` any time to turn them on later; running it twice won't
-duplicate anything. To remove them, delete the two entries under `hooks` in
-`~/.claude/settings.json`.
+duplicate anything.
+
+**Turning them off:**
+
+```bash
+bash ~/.claude/hooks/toggle.sh off      # switch off — nothing is deleted
+bash ~/.claude/hooks/toggle.sh on       # switch back on
+bash ~/.claude/hooks/toggle.sh status   # check which it currently is
+```
+
+This works even after the repo itself is gone — it just drops a marker file in
+`~/.claude/hooks/` that both scripts check before doing anything else, so toggling
+never touches `settings.json` and can't corrupt it. `off` is instant and total: no
+reminder, and Claude is never blocked from finishing, no matter what your tests say.
 
 > If you already have a `~/.claude/CLAUDE.md`, the installer will warn you and skip overwriting it. You can merge manually or replace it.
 
